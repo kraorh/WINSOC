@@ -1,0 +1,22 @@
+﻿Build started 09-12-2013 23:52:55.
+     1>Project "E:\c++ ws\Winsock_Server\Winsock_Server\Winsock_Server.vcxproj" on node 2 (rebuild target(s)).
+     1>_PrepareForClean:
+         Deleting file "Debug\Winsock_Server.lastbuildstate".
+       InitializeBuildStatus:
+         Touching "Debug\Winsock_Server.unsuccessfulbuild".
+       ClCompile:
+         D:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt Server.cpp
+         Server.cpp
+       Link:
+         D:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\c++ ws\Winsock_Server\Debug\Winsock_Server.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\Winsock_Server.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"E:\c++ ws\Winsock_Server\Debug\Winsock_Server.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\c++ ws\Winsock_Server\Debug\Winsock_Server.lib" /MACHINE:X86 Debug\Server.obj
+         Winsock_Server.vcxproj -> E:\c++ ws\Winsock_Server\Debug\Winsock_Server.exe
+       Manifest:
+         D:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"E:\c++ ws\Winsock_Server\Debug\Winsock_Server.exe;#1" /manifest Debug\Winsock_Server.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Debug\Winsock_Server.unsuccessfulbuild".
+         Touching "Debug\Winsock_Server.lastbuildstate".
+     1>Done Building Project "E:\c++ ws\Winsock_Server\Winsock_Server\Winsock_Server.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:02.18
