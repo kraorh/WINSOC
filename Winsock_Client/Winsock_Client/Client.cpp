@@ -8,8 +8,11 @@
 #pragma comment (lib, "AdvApi32.lib")
 #define DEFAULT_PORT "27015"
 #define DEFAULT_BUFFLENGTH 512
-int main()
+
+
+int connectAndSend(int m)
 {
+	printf("Current Thread number: %d",m);
 	int iResult;
 	WSAData wsData;
 	WORD wVersionRequested;
@@ -94,5 +97,22 @@ int main()
 		WSACleanup();
 	}
 	
+	return 0;
+}
+int main()
+{
+	HANDLE hConnections[10];
+	DWORD threadId;
+	for(int m = 0;m<10;m++)
+	{
+		hConnections[m] = CreateThread(0,0,(LPTHREAD_START_ROUTINE) connectAndSend,(LPVOID)m,0,	&threadId );
+	}
+	WaitForMultipleObjects(10,hConnections,TRUE,INFINITE);	
+	for(int n = 0;n<10;n++)
+	{		
+		CloseHandle(hConnections[n]);
+		printf("\nClosing handle for thread: %d",n);
+	}
+	getchar();
 	return 0;
 }

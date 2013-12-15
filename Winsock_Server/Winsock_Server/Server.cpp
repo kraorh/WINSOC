@@ -1,28 +1,111 @@
 #include<WinSock2.h>
 #include<WS2tcpip.h>
+#include<tchar.h>
+#include<strsafe.h>
 #include<stdio.h>
+#include<iostream>
+#include<vector>
 #define DEFAULT_PORT "27015"
 #define DEFAULT_BUFF_LEN 512
+#define MAX_THREADS 100
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
-int main()
+
+HANDLE hThrds[MAX_THREADS];
+HANDLE hListener;
+DWORD threadId;
+
+WORD wVersionSelected;
+struct addrinfo *result = NULL, *ptr = NULL, hints;
+
+void ClientThread(SOCKET clientSockThr)
+{
+	std::cout<<"Processing thread "<<std::endl;
+	char rcvbuff[DEFAULT_BUFF_LEN];
+	int bufflen = DEFAULT_BUFF_LEN;
+	int iSendResult;
+	int iResult;
+	do{
+		iResult= recv(clientSockThr, rcvbuff,bufflen,0);
+		if(iResult > 0)
+		{
+			printf("Bytes received: %d\n",iResult);
+			// Echo the message
+			iSendResult = send(clientSockThr,rcvbuff,iResult,0);
+			if(iSendResult == SOCKET_ERROR)
+			{
+				printf("Echo failed %d\n",WSAGetLastError());
+				closesocket(clientSockThr);
+				WSACleanup();
+				return;
+			}
+			printf("Bytes returned %d\n",iSendResult);
+		}else if(iResult == 0)
+			printf("Connection Closing");
+		else
+		{
+			printf("Reception falied\n");
+			closesocket(clientSockThr);
+			WSACleanup();
+			return;
+		}
+	}while(iResult > 0);
+	iResult = shutdown(clientSockThr,SD_SEND);
+	if(iResult == SOCKET_ERROR)
+	{
+		printf("Something happened while shutting down the socket");
+		closesocket(clientSockThr);
+		WSACleanup();
+		return;
+	}
+	closesocket(clientSockThr);
+}
+void SocketListener(SOCKET pListenerSock)
+{
+	int index = 0;
+	while(listen(pListenerSock, SOMAXCONN) != SOCKET_ERROR)
+	{
+		
+		SOCKET clientSock =  INVALID_SOCKET;
+		clientSock = accept(pListenerSock,NULL,NULL);
+		if(clientSock != INVALID_SOCKET)
+		{
+			std::cout<<"Starting a new Listening thread\n";
+			hThrds[index] = CreateThread(0,0,(LPTHREAD_START_ROUTINE) ClientThread,(LPVOID)clientSock,	0,&threadId );
+			
+			if(hThrds[index])
+			{
+
+				std::cout<<"Thread launched."<<std::endl;
+			}
+		}	
+
+		else
+		{
+			printf("Accept fialed %d\n",WSAGetLastError());
+			closesocket(pListenerSock);
+			WSACleanup();
+			return;
+		}
+	}
+
+}
+int initSockets(SOCKET &pListenerSock)
 {
 	int iResult;
-	WSAData wsaData;
-	WORD wVersionSelected;
-	SOCKET listenerSock = INVALID_SOCKET;
-	SOCKET clientSock = INVALID_SOCKET;
+	pListenerSock = INVALID_SOCKET;
 	wVersionSelected = MAKEWORD(2,2);
+	WSAData wsaData;
 	iResult = WSAStartup(wVersionSelected,&wsaData);
 	if(iResult != 0)
 	{
 		printf("Failed to start up server. Returned code: %d",iResult);
 		return 1;
 	}
-	struct addrinfo *result = NULL, *ptr = NULL,hints;
+	
 	ZeroMemory(&hints, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
@@ -35,15 +118,15 @@ int main()
 		WSACleanup();
 		return 1;
 	}
-	listenerSock = socket(result->ai_family,result->ai_socktype,result->ai_protocol);
-	if(listenerSock == INVALID_SOCKET)
+	pListenerSock = socket(result->ai_family,result->ai_socktype,result->ai_protocol);
+	if(pListenerSock == INVALID_SOCKET)
 	{
 		printf("Error in creating the socket %d\n",WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
 		return 1;
 	}
-	iResult = bind(listenerSock, result->ai_addr, (int)result->ai_addrlen);
+	iResult = bind(pListenerSock, result->ai_addr, (int)result->ai_addrlen);
 	if(iResult == SOCKET_ERROR)
 	{
 		printf("Some crap happened while binding the socket: %d\n",WSAGetLastError());
@@ -52,61 +135,31 @@ int main()
 		return 1;
 	}
 	freeaddrinfo(result);
-	if(listen(listenerSock, SOMAXCONN) == SOCKET_ERROR)
+	return 0;
+}
+int main()
+{
+	SOCKET listenerSock;
+	int iResult = initSockets(listenerSock);
+	if(iResult != 0)
 	{
-		printf("something went wrong while listening: %d\n",WSAGetLastError());
-		closesocket(listenerSock);
-		WSACleanup();
+		printf("Init failed!!!");
 		return 1;
 	}
-	// Code to accept the client socket
-	clientSock  = accept(listenerSock,NULL,NULL);
-	if(clientSock == INVALID_SOCKET)
+	// Start the listener thread
+	hListener = CreateThread(0,0,(LPTHREAD_START_ROUTINE) SocketListener,(LPVOID)listenerSock,0,&threadId);
+	if(hListener)
 	{
-		printf("Accept fialed %d\n",WSAGetLastError());
-		closesocket(listenerSock);
-		WSACleanup();
-		return 1;
+		printf("Started a new listener thread");
 	}
-	closesocket(listenerSock);
-	char rcvbuff[DEFAULT_BUFF_LEN];
-	int bufflen = DEFAULT_BUFF_LEN;
-	int iSendResult;
-	do{
-		iResult= recv(clientSock, rcvbuff,bufflen,0);
-		if(iResult > 0)
-		{
-			printf("Bytes received: %d\n",iResult);
-			// Echo the message
-			iSendResult = send(clientSock,rcvbuff,iResult,0);
-			if(iSendResult == SOCKET_ERROR)
-			{
-				printf("Echo failed %d\n",WSAGetLastError());
-				closesocket(clientSock);
-				WSACleanup();
-				return 1;
-			}
-			printf("Bytes returned %d\n",iSendResult);
-		}else if(iResult == 0)
-			printf("Connection Closing");
-		else
-		{
-			printf("Reception falied\n");
-			closesocket(clientSock);
-			WSACleanup();
-			return 1;
-		}
-	}while(iResult > 0);
-	// Shut down the socket
-	iResult = shutdown(clientSock,SD_SEND);
-	if(iResult == SOCKET_ERROR)
+	
+	WaitForMultipleObjects(MAX_THREADS,hThrds,TRUE, INFINITE);
+	for (int k=0; k<MAX_THREADS; k++)
 	{
-		printf("Something happened while shutting down the socket");
-		closesocket(clientSock);
-		WSACleanup();
-		return 1;
+		CloseHandle(hThrds[k]);
 	}
-	closesocket(clientSock);
-	WSACleanup();
+	WaitForSingleObject(hListener,INFINITE);
+	CloseHandle(hListener);
+
 	return 0;
 }
